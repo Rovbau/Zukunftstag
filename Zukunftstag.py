@@ -76,6 +76,9 @@ class Gui():
 
     def move(self, commands):
         """Runs the stepper motors according commands list"""
+        if commands == []:
+            print("No commands end moving")
+            return
         for command in commands:
             if self.stop_testing == True:
                 return
@@ -92,7 +95,9 @@ class Gui():
         """Read string and extract commands. 
         commands[0] -> Axis commands[1] -> Distanze
         Returns: list"""
-        arm_movement = []
+        arm_movement = []      
+        arm_lenght = Limits.ARM_LEFT_RIGHT_MAX          # The free distanze to move at X-axis 
+        arm_down =   Limits.ARM_UP_DOWN_MAX             # The free distanze to move at Z-axis
         zeilen_counter = 0
         user_programm = user_programm.split("\n")       #Data now split to lines
         
@@ -104,10 +109,19 @@ class Gui():
             if commands[0] == "":
                 continue
             if commands[0] in {'X','Z','SLEEP'} and commands[1].isnumeric():
+                #Check if arm movement ist not to high
+                if (commands[0] == "X" and int(commands[1]) > arm_lenght) or (commands[0] == "Z" and int(commands[1]) > arm_down):
+                    print("Fehler move-limits to high")
+                    messagebox.showerror("Fehler", "Maximaler Fahrweg Überschritten in Zeile: " + str(zeilen_counter))
+                    return([])
+                #Add a correct command to list
                 arm_movement.append([commands[0], int(commands[1])])
             else:
-                print("Fehler in Programm Code")
+                print("Fehler in Programm Code")             
                 messagebox.showerror("Fehler", "Programm Fehler in Zeile: " + str(zeilen_counter))
+                return([])
+
+            arm_movement.append(["SLEEP", int(5)])      #IMPORTANT: Motors need time todo here movements
         return(arm_movement)
        
     def start_test(self):
@@ -117,8 +131,6 @@ class Gui():
         self.button_start.configure(state=DISABLED)
         self.stop_testing = False  
 
-        arm_lenght = Limits.ARM_LEFT_RIGHT_MAX  # The free distanze to move at X-axis 
-        arm_down =   Limits.ARM_UP_DOWN_MAX
         
         #Get text von Text entry
         user_programm = self.text_entry.get("1.0",'end-1c')
